@@ -1,0 +1,1118 @@
+/*
+<metadata description="Channel-strip mixer: primary bank has three main faders plus solo/mute; three additional banks of four faders each." details="Four transport buttons on row 1: stop (column 1) is Gate; play and record are Toggle; metronome is gated latch (hold sends 127, release latches on; tap again sends 0). CCs configurable. Primary bank: Fader 1 (modwheel) and Fader 3 (volume) standard, Fader 2 (pan) bidirectional; colors and CCs in Dashboard. Solo Button and Mute Button CCs (toggle). Additional banks 1–3: four faders each (Bank N Fader *), with per-bank gradient colors. Mode switches bank."
+          target="Lightpad" 
+          tags="MIDI;Controller;Mixing;" canEmbedModes="false">
+	<groups>
+        <group name="btnStop" displayName="Button 1 (stop)" />
+        <group name="btnPlay" displayName="Button 2 (play)" />
+        <group name="btnRecord" displayName="Button 3 (record)" />
+        <group name="btnMetro" displayName="Button 4 (metronome)" />
+        <group name="stripButtons" displayName="Channel strip buttons" />
+        <group name="mainFaders" displayName="Channel strip faders" />
+        <group name="stdBankColors" displayName="Additional bank fader colors" />
+        <group name="stdBank1Faders" displayName="Bank 1 Fader *" count="4" />
+        <group name="stdBank2Faders" displayName="Bank 2 Fader *" count="4" />
+        <group name="stdBank3Faders" displayName="Bank 3 Fader *" count="4" />
+	</groups>
+	<variables>
+        <variable name="midiChannel" displayName="MIDI Channel" type="int" min="1" max="16" value="1" displayMode="stepper" tooltip="The MIDI channel that values are sent on" />
+        <variable name="bottomDetentRange" displayName="Standard fader zero detent" type="int" min="0" max="15" value="7" tooltip="Standard faders: values 0–N snap to 0 at bottom. 0 = disabled."/>
+        <variable name="centerDetentRange" displayName="Bipolar fader center detent" type="int" min="0" max="15" value="5" tooltip="Fader 2 (pan) only: values within ±N of 64 snap to center. 0 = disabled."/>
+        <variable name="mainFader1CC" displayName="Fader 1 (modwheel) CC" group="mainFaders" type="int" min="0" max="127" value="1" tooltip="Standard fader; default CC 1."/>
+        <variable name="stripMainFader1MinColor" displayName="Fader 1 (modwheel) min color" group="mainFaders" type="colour" value="0xff5082f1" tooltip="Modwheel fader: gradient low."/>
+        <variable name="stripMainFader1MaxColor" displayName="Fader 1 (modwheel) max color" group="mainFaders" type="colour" value="0xff50f182" tooltip="Modwheel fader: gradient high."/>
+        <variable name="mainFader2CC" displayName="Fader 2 (pan) CC" group="mainFaders" type="int" min="0" max="127" value="112" tooltip="Bidirectional pan-style; default CC 112."/>
+        <variable name="stripMainBiNegColor" displayName="Fader 2 (pan) negative color" group="mainFaders" type="colour" value="0xff5082f1" tooltip="Pan fader: 64 toward 0."/>
+        <variable name="stripMainBiPosColor" displayName="Fader 2 (pan) positive color" group="mainFaders" type="colour" value="0xfff18250" tooltip="Pan fader: 64 toward 127."/>
+        <variable name="mainFader3CC" displayName="Fader 3 (volume) CC" group="mainFaders" type="int" min="0" max="127" value="113" tooltip="Standard fader; default CC 113."/>
+        <variable name="stripMainFader3MinColor" displayName="Fader 3 (volume) min color" group="mainFaders" type="colour" value="0xff5082f1" tooltip="Volume fader: gradient low."/>
+        <variable name="stripMainFader3MaxColor" displayName="Fader 3 (volume) max color" group="mainFaders" type="colour" value="0xff50f182" tooltip="Volume fader: gradient high."/>
+        <variable name="stdBank1MinColor" displayName="Bank 1 min color" group="stdBankColors" type="colour" value="0xff5082f1" tooltip="Gradient low for Bank 1 faders (columns when on that bank)."/>
+        <variable name="stdBank1MaxColor" displayName="Bank 1 max color" group="stdBankColors" type="colour" value="0xff50f182" tooltip="Gradient high for Bank 1."/>
+        <variable name="stdBank2MinColor" displayName="Bank 2 min color" group="stdBankColors" type="colour" value="0xff5082f1" tooltip="Gradient low for Bank 2."/>
+        <variable name="stdBank2MaxColor" displayName="Bank 2 max color" group="stdBankColors" type="colour" value="0xff50f182" tooltip="Gradient high for Bank 2."/>
+        <variable name="stdBank3MinColor" displayName="Bank 3 min color" group="stdBankColors" type="colour" value="0xff5082f1" tooltip="Gradient low for Bank 3."/>
+        <variable name="stdBank3MaxColor" displayName="Bank 3 max color" group="stdBankColors" type="colour" value="0xff50f182" tooltip="Gradient high for Bank 3."/>
+        <variable name="stripSoloButtonCC" displayName="Solo Button CC" group="stripButtons" type="int" min="0" max="127" value="106" tooltip="MIDI CC for solo (toggle)."/>
+        <variable name="stripMuteButtonCC" displayName="Mute Button CC" group="stripButtons" type="int" min="0" max="127" value="107" tooltip="MIDI CC for mute (toggle)."/>
+        <variable name="button1CC" displayName="MIDI CC" group="btnStop" type="int" min="0" max="127" value="102" tooltip="MIDI CC for stop. Fixed Gate on the pad."/>
+        <variable name="button2CC" displayName="MIDI CC" group="btnPlay" type="int" min="0" max="127" value="103" tooltip="MIDI CC for play. Fixed Toggle."/>
+        <variable name="button3CC" displayName="MIDI CC" group="btnRecord" type="int" min="0" max="127" value="104" tooltip="MIDI CC for record. Fixed Toggle."/>
+        <variable name="button4CC" displayName="MIDI CC" group="btnMetro" type="int" min="0" max="127" value="105" tooltip="Metronome: gated latch. While off, hold sends CC 127; release sends nothing and latches on. While on, tap sends CC 0 and turns off."/>
+        <vector count="4" group="stdBank1Faders" wantsGetFunctions="true" wantsSetFunctions="true">
+            <variable name="bank1FaderCC" displayName="Fader CC" type="int" min="0" max="127" value="0" initStart="116" tooltip="MIDI CC when this bank is selected on the block."/>
+        </vector>
+        <vector count="4" group="stdBank2Faders" wantsGetFunctions="true" wantsSetFunctions="true">
+            <variable name="bank2FaderCC" displayName="Fader CC" type="int" min="0" max="127" value="0" initStart="120" tooltip="MIDI CC when Bank 2 is selected."/>
+        </vector>
+        <vector count="4" group="stdBank3Faders" wantsGetFunctions="true" wantsSetFunctions="true">
+            <variable name="bank3FaderCC" displayName="Fader CC" type="int" min="0" max="127" value="0" initStart="124" tooltip="MIDI CC when Bank 3 is selected."/>
+        </vector>
+        <vector count="4" wantsGetFunctions="true" wantsSetFunctions="true">
+            <variable name="button" type="int" min="0" max="255" value="0" visible="false" internal="true"/>
+            <variable name="buttonDisplayValue" type="int" min="0" max="127" value="0" visible="false" internal="true"/>
+        </vector>
+        <vector count="3" wantsGetFunctions="true" wantsSetFunctions="true">
+            <variable name="mainSlider" type="int" min="0" max="11" value="0" visible="false" internal="true"/>
+            <variable name="mainFaderValue" type="int" min="0" max="127" value="64" visible="false" internal="true"/>
+        </vector>
+        <vector count="12" wantsGetFunctions="true" wantsSetFunctions="true">
+            <variable name="stdSlider" type="int" min="0" max="11" value="0" visible="false" internal="true"/>
+            <variable name="stdFaderValue" type="int" min="0" max="127" value="64" visible="false" internal="true"/>
+        </vector>
+	</variables>
+</metadata>
+*/
+
+// PC Note - We arent using the heap. Without this statement we end up using too much of the heap...
+#heapsize: 1
+
+const int multTransport       = 1;
+const int multStripSolo       = 2;
+const int multStripMute       = 3;
+const int multSlider          = 4;
+const int multMaxSlots        = 4;
+const int multSlotNone        = 4;
+const int btnBehToggle        = 0;
+const int btnBehGate          = 1;
+const int metroButtonIndex    = 3;
+const int metroHoldResendMs   = 150;
+const int longPressMs         = 500;
+const int numBanks            = 4;
+const int channelStripBank    = 0;
+const int stripSoloColor      = 0xff2088ff;
+const int stripMuteColor      = 0xffffcc00;
+const int stripSoloY          = 5;
+const int stripMuteY          = 10;
+const int stripColX           = 4;
+const int mainFaderBipolarIdx = 1;
+
+int bank;
+int modeButtonDownTime;
+int slotFinger[4];
+int slotControlId[4];
+int slotType[4];
+int slotParam[4];
+int stripBtn0;
+int stripBtn1;
+int stripDisp0;
+int stripDisp1;
+int metroGateHeld;
+int lastMetroHoldResendMs;
+
+//==============================================================================
+void releaseTouchSlot (int s)
+{
+    if (s < 0 || s >= multMaxSlots)
+        return;
+    slotFinger[s]    = 0;
+    slotControlId[s] = 0;
+    slotType[s]      = 0;
+    slotParam[s]     = 0;
+}
+
+//==============================================================================
+void releaseAllTouchSlots ()
+{
+    if (metroGateHeld != 0)
+    {
+        metroGateHeld = 0;
+        if (getButton (metroButtonIndex) == 0)
+            setButtonDisplayValue (metroButtonIndex, 0);
+    }
+    for (int i = 0; i < multMaxSlots; ++i)
+        releaseTouchSlot (i);
+}
+
+//==============================================================================
+void initialise()
+{
+	bank = 0;
+	for (int i = 0; i < multMaxSlots; ++i)
+	{
+	    slotFinger[i]     = 0;
+	    slotControlId[i]  = 0;
+	    slotType[i]       = 0;
+	    slotParam[i]      = 0;
+	}
+	for (int i = 0; i < 3; ++i)
+	{
+	    setMainSlider (i, 1);
+	    setMainFaderValue (i, 64);
+	}
+	for (int i = 0; i < 12; ++i)
+	{
+	    setStdSlider (i, 1);
+	    setStdFaderValue (i, 64);
+	}
+
+    setButtonDisplayValue (0, 64);
+    setButtonDisplayValue (1, 64);
+    setButtonDisplayValue (2, 64);
+    setButtonDisplayValue (3, 0);
+    setButton (1, 0);
+    setButton (2, 0);
+    setButton (3, 0);
+
+    for (int i = 0; i < 32; ++i)
+        setLocalConfigActiveState (i, false, false);
+
+    stripBtn0 = 0;
+    stripBtn1 = 0;
+    stripDisp0 = 64;
+    stripDisp1 = 64;
+    metroGateHeld = 0;
+    lastMetroHoldResendMs = 0;
+}
+
+//==============================================================================
+void handleButtonDown (int index)
+{
+    if (index == 0 || index == 1)
+        modeButtonDownTime = getMillisecondCounter();
+}
+
+//==============================================================================
+void handleButtonUp (int index)
+{
+    // Short press: next bank. Long press: previous bank.
+    if (index == 0 || index == 1)
+    {
+        int elapsed = getMillisecondCounter() - modeButtonDownTime;
+        if (elapsed >= longPressMs)
+            bank = (bank + numBanks - 1) % numBanks;
+        else
+            bank = (bank + 1) % numBanks;
+        releaseAllTouchSlots ();
+    }
+}
+
+//==============================================================================
+bool mainFaderIsBipolar (int mainIdx)
+{
+    return mainIdx == mainFaderBipolarIdx;
+}
+
+//==============================================================================
+int mainFaderMidiCC (int mainIdx)
+{
+    if (mainIdx == 0)
+        return mainFader1CC;
+    if (mainIdx == 1)
+        return mainFader2CC;
+    return mainFader3CC;
+}
+
+//==============================================================================
+int stdFaderOutputCC (int stdIdx)
+{
+    int slot = stdIdx % 4;
+    if (stdIdx < 4)
+        return getBank1FaderCC (slot);
+    if (stdIdx < 8)
+        return getBank2FaderCC (slot);
+    return getBank3FaderCC (slot);
+}
+
+//==============================================================================
+int transportButtonMidiCC (int buttonIndex)
+{
+    if (buttonIndex == 0)
+        return button1CC;
+    if (buttonIndex == 1)
+        return button2CC;
+    if (buttonIndex == 2)
+        return button3CC;
+    return button4CC;
+}
+
+//==============================================================================
+int channelIndexForX (float x)
+{
+    float x01 = x * 0.5;
+
+    // Each slider has an area of 3px + 1px gap. We want the gaps to be dead zones..
+	int ledZone = int (x01 * 15);
+
+	if (ledZone <= 3) return 0;
+	if (ledZone >= 4 && ledZone <= 7) return 1;
+	if (ledZone >= 8 && ledZone <= 11) return 2;
+	return 3;
+}
+
+//==============================================================================
+int stripRowFromTouchY (float y)
+{
+    int r = int (y * 7.0);
+    if (r < 4)
+        r = 4;
+    if (r > 14)
+        r = 14;
+    return r;
+}
+
+//==============================================================================
+bool hitStripSolo (float x, float y)
+{
+    if (channelIndexForX (x) != 1)
+        return false;
+    int row = stripRowFromTouchY (y);
+    return row >= stripSoloY && row <= stripSoloY + 2;
+}
+
+//==============================================================================
+bool hitStripMute (float x, float y)
+{
+    if (channelIndexForX (x) != 1)
+        return false;
+    int row = stripRowFromTouchY (y);
+    return row >= stripMuteY && row <= stripMuteY + 2;
+}
+
+//==============================================================================
+float getSliderValue01ForTouchAtY (float y)
+{
+    float sliderMax   = 14.0;
+    float sliderMin   = 4.0;
+    float sliderRange = sliderMax - sliderMin;
+
+    float closestLED  = clamp (sliderMin, sliderMax, float (y * 14));
+    float value01     = ((closestLED - sliderMin) / sliderRange);
+    return 1.0 - value01;
+}
+
+//==============================================================================
+int convertSliderValue01ToRange (float slider01, int sliderMin, int sliderMax, int hardMax)
+{
+    return clamp (0x00, hardMax, sliderMin + int (slider01 * float (sliderMax - sliderMin)));
+}
+
+//==============================================================================
+int convertSliderValue01ToOutputRange (float slider01)
+{
+    return convertSliderValue01ToRange (slider01, 0, 127, 0x7F);
+}
+
+//==============================================================================
+void doTouchSliderAtVisChan (float x, float y, float z, float vz, int visChan)
+{
+    if (bank == channelStripBank && visChan == 1)
+        return;
+
+    int sliderIndex;
+    if (bank == channelStripBank)
+    {
+        if (visChan == 0)
+            sliderIndex = 0;
+        else if (visChan == 2)
+            sliderIndex = 1;
+        else
+            sliderIndex = 2;
+    }
+    else
+        sliderIndex = bank * 4 + visChan;
+
+    float slider01 = getSliderValue01ForTouchAtY (y * 0.5);
+
+    if (sliderIndex < 3)   // Main faders: 0 and 2 standard, 1 bidirectional
+    {
+        if (! mainFaderIsBipolar (sliderIndex))
+        {
+            int midiValue = convertSliderValue01ToOutputRange (slider01);
+            if (bottomDetentRange > 0 && midiValue <= bottomDetentRange)
+                midiValue = 0;
+            int newValue  = convertSliderValue01ToRange (slider01, 1, 11, 11);
+            if (bottomDetentRange > 0 && midiValue == 0)
+                newValue = 1;
+            setMainSlider (sliderIndex, newValue);
+            sendCC (midiChannel - 1, mainFaderMidiCC (sliderIndex), midiValue);
+        }
+        else
+        {
+            int midiValue = clamp (0, 127, int (slider01 * 127.0));
+            if (centerDetentRange > 0 && midiValue >= (64 - centerDetentRange) && midiValue <= (64 + centerDetentRange))
+                midiValue = 64;
+            setMainFaderValue (sliderIndex, midiValue);
+            sendCC (midiChannel - 1, mainFaderMidiCC (sliderIndex), midiValue);
+        }
+    }
+    else   // Standard faders (8): always standard
+    {
+        int stdIdx     = sliderIndex - 4;
+        int midiValue  = convertSliderValue01ToOutputRange (slider01);
+        if (bottomDetentRange > 0 && midiValue <= bottomDetentRange)
+            midiValue = 0;
+        int newValue   = convertSliderValue01ToRange (slider01, 1, 11, 11);
+        if (bottomDetentRange > 0 && midiValue == 0)
+            newValue = 1;
+        setStdSlider (stdIdx, newValue);
+        sendCC (midiChannel - 1, stdFaderOutputCC (stdIdx), midiValue);
+    }
+}
+
+//==============================================================================
+int transportButtonBehaviour (int buttonIndex)
+{
+    if (buttonIndex == 0)
+        return btnBehGate;
+    return btnBehToggle;
+}
+
+//==============================================================================
+void setStripDisplayForMidi (int which, int midiV)
+{
+    int d = (midiV == 0) ? 64 : 127;
+    if (which == 0)
+        stripDisp0 = d;
+    else
+        stripDisp1 = d;
+}
+
+//==============================================================================
+void doStripButtonDown (int which)
+{
+    int cc = (which == 0) ? stripSoloButtonCC : stripMuteButtonCC;
+    if (which == 0)
+        stripBtn0 = 255 - stripBtn0;
+    else
+        stripBtn1 = 255 - stripBtn1;
+    int raw = (which == 0) ? stripBtn0 : stripBtn1;
+    int v   = raw / 2;
+    setStripDisplayForMidi (which, v);
+    sendCC (midiChannel - 1, cc, v);
+}
+
+//==============================================================================
+void doStripButtonUp (int which)
+{
+}
+
+//==============================================================================
+void doTouchButtonDown (int in, int buttonIndex, float x, float y, float z, float vz)
+{
+    int buttonCC    = transportButtonMidiCC (buttonIndex);
+    int behaviour   = transportButtonBehaviour (buttonIndex);
+
+    if (buttonIndex == metroButtonIndex)
+    {
+        if (getButton (metroButtonIndex) != 0)
+        {
+            setButton (metroButtonIndex, 0);
+            setButtonDisplayValue (metroButtonIndex, 0);
+            sendCC (midiChannel - 1, buttonCC, 0);
+        }
+        else
+        {
+            setButtonDisplayValue (metroButtonIndex, 127);
+            sendCC (midiChannel - 1, buttonCC, 0x7F);
+            metroGateHeld = 1;
+            lastMetroHoldResendMs = getMillisecondCounter ();
+        }
+        return;
+    }
+
+    if (behaviour == btnBehToggle)
+    {
+        setButton (buttonIndex, 255 - getButton (buttonIndex));
+        int v = (getButton (buttonIndex) != 0) ? 0x7F : 0;
+        int displayV = (v == 0) ? 64 : 0x7F;
+        setButtonDisplayValue (buttonIndex, displayV);
+        sendCC (midiChannel - 1, buttonCC, v);
+    }
+    else if (behaviour == btnBehGate)
+    {
+        setButton (buttonIndex, 255);
+        setButtonDisplayValue (buttonIndex, 127);
+        sendCC (midiChannel - 1, buttonCC, 0x7F);
+    }
+}
+
+//==============================================================================
+void doTouchButtonUp (int index, int buttonIndex, float x, float y, float z, float vz)
+{
+    if (buttonIndex == metroButtonIndex)
+    {
+        if (metroGateHeld != 0)
+        {
+            metroGateHeld = 0;
+            setButton (metroButtonIndex, 255);
+            setButtonDisplayValue (metroButtonIndex, 127);
+        }
+        return;
+    }
+
+    if (transportButtonBehaviour (buttonIndex) == btnBehGate)
+	{
+		setButton (buttonIndex, 0);
+		// Stop: rest state is dim (64), not off. Other Gate buttons stay off until pressed again.
+		if (buttonIndex == 0)
+		    setButtonDisplayValue (buttonIndex, 64);
+		else
+		    setButtonDisplayValue (buttonIndex, 0);
+		sendCC (midiChannel - 1, transportButtonMidiCC (buttonIndex), 0x00);
+	}
+}
+
+//==============================================================================
+int scaleButtonColor (int color, int percent)
+{
+    int r = ((color >> 16) & 0xFF) * percent / 100;
+    int g = ((color >> 8) & 0xFF) * percent / 100;
+    int b = (color & 0xFF) * percent / 100;
+    return makeARGB (255, r, g, b);
+}
+
+//==============================================================================
+int getButtonBrightColor (int buttonIndex)
+{
+    if (buttonIndex == 0) return 0xff8d8d8d;
+    if (buttonIndex == 1) return 0xff00ff00;
+    if (buttonIndex == 2) return 0xffff0000;
+    return 0xffffff00;
+}
+
+//==============================================================================
+void drawButtonPixel (int x, int y, int color, int alpha)
+{
+    if (alpha <= 0)
+        return;
+
+    fillRect (makeARGB (alpha, (color >> 16) & 0xFF, (color >> 8) & 0xFF, color & 0xFF), x, y, 1, 1);
+}
+
+//==============================================================================
+void drawStripToggleIcon (int leftX, int topY, int brightColor, int displayValue, int triggerAlpha)
+{
+    int state = 0;
+    if (triggerAlpha > 0)
+        state = 3;
+    else if (displayValue == 127)
+        state = 2;
+    else if (displayValue != 0)
+        state = 1;
+
+    if (state == 0)
+        return;
+
+    int dimColor = scaleButtonColor (brightColor, 35);
+
+    for (int py = 0; py < 3; ++py)
+    {
+        for (int px = 0; px < 3; ++px)
+        {
+            if (state == 3)
+                drawButtonPixel (leftX + px, topY + py, brightColor, triggerAlpha);
+            else if (state == 2)
+                drawButtonPixel (leftX + px, topY + py, brightColor, 255);
+            else
+                drawButtonPixel (leftX + px, topY + py, dimColor, 255);
+        }
+    }
+}
+
+//==============================================================================
+int getButtonPixelLevel (int buttonIndex, int px, int py)
+{
+    if (buttonIndex == 0)
+        return 1;
+
+    if (buttonIndex == 1)
+    {
+        if (px == 0)
+            return 2;
+        if (px == 1 && py == 1)
+            return 2;
+        if (px == 1)
+            return 1;
+        if (px == 2 && py == 1)
+            return 2;
+        return 0;
+    }
+
+    if (buttonIndex == 2)
+    {
+        if (px == 1 && py == 1)
+            return 2;
+        if (px == 1)
+            return 2;
+        if (py == 1)
+            return 2;
+        return 1;
+    }
+
+    if (buttonIndex == 3)
+    {
+        if (py == 0 || py == 2)
+            return 2;
+        if (py == 1 && px == 1)
+            return 2;
+        return 1;
+    }
+
+    return 1;
+}
+
+//==============================================================================
+void drawButtonIcon (int buttonIndex, int x, int brightColor, int displayValue, int triggerAlpha)
+{
+    int state = 0;
+
+    if (triggerAlpha > 0)
+        state = 3;
+    else if (displayValue == 127)
+        state = 2;
+    else if (displayValue != 0 || (buttonIndex == 0 && displayValue == 64))
+        state = 1;
+
+    if (state == 0)
+        return;
+
+    int dimColor = scaleButtonColor (brightColor, 30);
+    int softDimColor = scaleButtonColor (brightColor, 15);
+
+    for (int py = 0; py < 3; ++py)
+    {
+        for (int px = 0; px < 3; ++px)
+        {
+            int level = getButtonPixelLevel (buttonIndex, px, py);
+            if (level == 0)
+                continue;
+
+            if (state == 3)
+                drawButtonPixel (x + px, py, brightColor, (level == 2) ? triggerAlpha : (triggerAlpha / 2));
+            else if (state == 2)
+            {
+                if (buttonIndex == 0)
+                    drawButtonPixel (x + px, py, brightColor, 255);
+                else
+                    drawButtonPixel (x + px, py, (level == 2) ? brightColor : dimColor, 255);
+            }
+            else if (buttonIndex == 0)
+                drawButtonPixel (x + px, py, dimColor, 255);
+            else
+                drawButtonPixel (x + px, py, (level == 2) ? dimColor : softDimColor, 255);
+        }
+    }
+}
+
+//==============================================================================
+bool isTouchingButton (float y)
+{
+    return (int (y * 0.5 * 15.0) <= 2);
+}
+
+//==============================================================================
+bool isValidTouchIndex (int index)
+{
+    return ((index - 1) < 16);
+}
+
+//==============================================================================
+int findTouchSlot (int index)
+{
+    for (int i = 0; i < multMaxSlots; ++i)
+        if (slotFinger[i] == index)
+            return i;
+    return multSlotNone;
+}
+
+//==============================================================================
+bool isTouchControlBusy (int controlId)
+{
+    for (int i = 0; i < multMaxSlots; ++i)
+        if (slotFinger[i] != 0 && slotControlId[i] == controlId)
+            return true;
+    return false;
+}
+
+//==============================================================================
+int countActiveTouchSlots ()
+{
+    int n = 0;
+    for (int i = 0; i < multMaxSlots; ++i)
+        if (slotFinger[i] != 0)
+            ++n;
+    return n;
+}
+
+//==============================================================================
+// Syncs toggle buttons from incoming MIDI CC so the block stays in sync with the DAW.
+// Only applies to buttons in Toggle mode; updates internal state and LED without sending MIDI.
+void handleMIDI (int byte0, int byte1, int byte2)
+{
+    if ((byte0 & 0xF0) != 0xB0)
+        return;
+
+    int inChannel = byte0 & 0x0F;
+    if (inChannel != (midiChannel - 1))
+        return;
+
+    int cc     = byte1;
+    int value  = byte2;
+
+    // Buttons: receive on same CC they send; 127 = bright, other non-zero = dim, 0 = off (LED).
+    // Stop: CC 0 echo keeps idle LED dim (64). Play/record toggles: off state LED dim (64), not dark.
+    for (int channel = 0; channel < 4; ++channel)
+    {
+        if (transportButtonMidiCC (channel) != cc)
+            continue;
+        int displayVal = value;
+        if (channel == 0 && value == 0 && transportButtonBehaviour (channel) == btnBehGate)
+            displayVal = 64;
+        if ((channel == 1 || channel == 2) && (value == 0 || value == 64))
+            displayVal = 64;
+        setButtonDisplayValue (channel, displayVal);
+        if (channel == metroButtonIndex)
+        {
+            // Gated latch from off: keep internal state off until finger-up even if DAW echoes 127.
+            if (metroGateHeld != 0)
+            {
+                if (value == 0)
+                {
+                    metroGateHeld = 0;
+                    setButton (channel, 0);
+                }
+                continue;
+            }
+            if (value == 0)
+                setButton (channel, 0);
+            else
+                setButton (channel, 255);
+            continue;
+        }
+        if (transportButtonBehaviour (channel) == btnBehToggle)
+        {
+            // Play/record only here (metro continues above). Off = CC 0 or 64 (dim idle); else on.
+            if (value == 0 || value == 64)
+                setButton (channel, 0);
+            else
+                setButton (channel, 255);
+        }
+    }
+
+    for (int si = 0; si < 2; ++si)
+    {
+        int stripCC = (si == 0) ? stripSoloButtonCC : stripMuteButtonCC;
+        if (stripCC != cc)
+            continue;
+        int displayVal = value;
+        if (value == 0)
+            displayVal = 64;
+        if (si == 0)
+            stripDisp0 = displayVal;
+        else
+            stripDisp1 = displayVal;
+        int cur = (si == 0) ? stripBtn0 : stripBtn1;
+        if (value == 127 && cur == 0)
+        {
+            if (si == 0)
+                stripBtn0 = 255;
+            else
+                stripBtn1 = 255;
+        }
+        else if (value == 0 && cur != 0)
+        {
+            if (si == 0)
+                stripBtn0 = 0;
+            else
+                stripBtn1 = 0;
+        }
+    }
+
+    // Sync main fader heights from incoming CC (three main faders).
+    for (int channel = 0; channel < 3; ++channel)
+    {
+        if (mainFaderMidiCC (channel) != cc)
+            continue;
+        if (! mainFaderIsBipolar (channel))
+        {
+            int ledHeight = 1 + (value * 10) / 127;
+            setMainSlider (channel, clamp (1, 11, ledHeight));
+        }
+        else
+            setMainFaderValue (channel, clamp (0, 127, value));
+    }
+    for (int stdIdx = 0; stdIdx < 12; ++stdIdx)
+    {
+        if (stdFaderOutputCC (stdIdx) != cc)
+            continue;
+        int ledHeight = 1 + (value * 10) / 127;
+        setStdSlider (stdIdx, clamp (1, 11, ledHeight));
+    }
+}
+
+//==============================================================================
+void touchStart (int index, float x, float y, float z, float vz)
+{
+    if (! isValidTouchIndex (index))
+    {
+        return;
+    }
+
+    if (findTouchSlot (index) < multSlotNone)
+        return;
+
+    int controlId;
+    int stype;
+    int param = 0;
+
+    if (isTouchingButton (y))
+    {
+        param      = channelIndexForX (x);
+        controlId  = 1 + param;
+        stype      = multTransport;
+    }
+    else if (bank == channelStripBank && hitStripSolo (x, y))
+    {
+        controlId = 10;
+        stype     = multStripSolo;
+    }
+    else if (bank == channelStripBank && hitStripMute (x, y))
+    {
+        controlId = 11;
+        stype     = multStripMute;
+    }
+    else
+    {
+        int vc = channelIndexForX (x);
+        if (bank == channelStripBank && vc == 1)
+            return;
+        if (bank == channelStripBank)
+            controlId = 20 + (vc == 0 ? 0 : (vc == 2 ? 1 : 2));
+        else
+            controlId = 40 + bank * 4 + vc;
+        stype     = multSlider;
+        param     = vc;
+    }
+
+    if (isTouchControlBusy (controlId))
+        return;
+    if (countActiveTouchSlots () >= multMaxSlots)
+        return;
+
+    int s = -1;
+    for (int i = 0; i < multMaxSlots; ++i)
+    {
+        if (slotFinger[i] == 0)
+        {
+            s = i;
+            break;
+        }
+    }
+    if (s < 0)
+        return;
+
+    slotFinger[s]    = index;
+    slotControlId[s] = controlId;
+    slotType[s]      = stype;
+    slotParam[s]     = param;
+
+    if (stype == multTransport)
+        doTouchButtonDown (index, param, x, y, z, vz);
+    else if (stype == multStripSolo)
+        doStripButtonDown (0);
+    else if (stype == multStripMute)
+        doStripButtonDown (1);
+    else
+        doTouchSliderAtVisChan (x, y, z, vz, param);
+}
+
+//==============================================================================
+void touchMove (int index, float x, float y, float z, float vz)
+{
+    if (! isValidTouchIndex (index))
+    {
+        return;
+    }
+
+    int s = findTouchSlot (index);
+    if (s >= multSlotNone)
+        return;
+
+    if (slotType[s] == multStripSolo || slotType[s] == multStripMute)
+        return;
+
+    if (slotType[s] == multTransport)
+    {
+        if (! isTouchingButton (y))
+            doTouchSliderAtVisChan (x, y, z, vz, slotParam[s]);
+        else if (slotParam[s] == metroButtonIndex && metroGateHeld != 0)
+        {
+            int now = getMillisecondCounter ();
+            if (now - lastMetroHoldResendMs >= metroHoldResendMs)
+            {
+                sendCC (midiChannel - 1, transportButtonMidiCC (metroButtonIndex), 0x7F);
+                lastMetroHoldResendMs = now;
+            }
+        }
+        return;
+    }
+
+    if (slotType[s] == multSlider)
+        doTouchSliderAtVisChan (x, y, z, vz, slotParam[s]);
+}
+
+//==============================================================================
+void touchEnd (int index, float x, float y, float z, float vz)
+{
+    if (! isValidTouchIndex (index))
+    {
+        return;
+    }
+
+    int s = findTouchSlot (index);
+    if (s >= multSlotNone)
+        return;
+
+    if (slotType[s] == multStripSolo)
+        doStripButtonUp (0);
+    else if (slotType[s] == multStripMute)
+        doStripButtonUp (1);
+    else if (slotType[s] == multTransport)
+        doTouchButtonUp (index, slotParam[s], x, y, z, vz);
+    else if (slotType[s] == multSlider)
+        doTouchSliderAtVisChan (x, y, z, vz, slotParam[s]);
+
+    releaseTouchSlot (s);
+}
+
+//==============================================================================
+void repaint()
+{
+    fillRect (0x000000, 0, 0, 15, 15);
+
+    // Bank indicator: 3 LEDs each, above nearest fader; 1-LED gap between (0-2, 4-6, 8-10, 12-14)
+    int bankColor = (bank == channelStripBank) ? 0xff00ff00 : ((bank == 1) ? 0xff0088ff : ((bank == 2) ? 0xffff8800 : 0xffaa00ff));
+    fillRect (bankColor, bank * 4, 3, 3, 1);
+
+    for (int channel = 0; channel < 4; ++channel)
+	{
+	    int displayValue = getButtonDisplayValue (channel);
+	    int btnBright    = getButtonBrightColor (channel);
+	    int x            = channel * 4;
+	    drawButtonIcon (channel, x, btnBright, displayValue, 0);
+	}
+
+    for (int visChan = 0; visChan < 4; ++visChan)
+	{
+	    int channel = bank * 4 + visChan;
+	    int x       = visChan * 4;
+
+	    if (bank == channelStripBank && visChan == 1)
+	    {
+	        drawStripToggleIcon (stripColX, stripSoloY, stripSoloColor, stripDisp0, 0);
+	        drawStripToggleIcon (stripColX, stripMuteY, stripMuteColor, stripDisp1, 0);
+	    }
+	    else if (bank == channelStripBank)
+	    {
+	        int mainIdx = (visChan == 0) ? 0 : (visChan == 2) ? 1 : 2;
+	        if (! mainFaderIsBipolar (mainIdx))
+	        {
+	            int sliderValue = getMainSlider (mainIdx);
+	            int minC;
+	            int maxC;
+	            if (mainIdx == 0)
+	            {
+	                minC = 0xff000000 | (stripMainFader1MinColor & 0x00ffffff);
+	                maxC = 0xff000000 | (stripMainFader1MaxColor & 0x00ffffff);
+	            }
+	            else
+	            {
+	                minC = 0xff000000 | (stripMainFader3MinColor & 0x00ffffff);
+	                maxC = 0xff000000 | (stripMainFader3MaxColor & 0x00ffffff);
+	            }
+	            int zeroC = 0xff808080;
+	            if (sliderValue == 1)
+	                fillRect (zeroC, x, 14, 3, 1);
+	            else
+	                blendGradientRect (maxC, maxC, minC, minC, x, 15 - sliderValue, 3, sliderValue);
+	        }
+	        else
+	        {
+	            int val   = getMainFaderValue (mainIdx);
+	            int zeroC = 0xff808080;
+	            int negC  = 0xff000000 | (stripMainBiNegColor & 0x00ffffff);
+	            int posC  = 0xff000000 | (stripMainBiPosColor & 0x00ffffff);
+	            if (val == 64)
+	                fillRect (zeroC, x, 9, 3, 1);
+	            else if (val < 64)
+	            {
+	                int height = 6 - (val * 5) / 64;
+	                blendGradientRect (zeroC, zeroC, negC, negC, x, 9, 3, height);
+	            }
+	            else
+	            {
+	                int height = 1 + ((val - 64) * 5) / 63;
+	                int y      = 9 - (height - 1);
+	                blendGradientRect (posC, posC, zeroC, zeroC, x, y, 3, height);
+	            }
+	        }
+	    }
+	    else if (channel >= 4)   // Standard faders (12): min/max per bank (2, 3, 4)
+	    {
+		int stdIdx      = channel - 4;
+		int sliderValue = getStdSlider (stdIdx);
+		int minC;
+		int maxC;
+		if (stdIdx < 4)
+		{
+		    minC = 0xff000000 | (stdBank1MinColor & 0x00ffffff);
+		    maxC = 0xff000000 | (stdBank1MaxColor & 0x00ffffff);
+		}
+		else if (stdIdx < 8)
+		{
+		    minC = 0xff000000 | (stdBank2MinColor & 0x00ffffff);
+		    maxC = 0xff000000 | (stdBank2MaxColor & 0x00ffffff);
+		}
+		else
+		{
+		    minC = 0xff000000 | (stdBank3MinColor & 0x00ffffff);
+		    maxC = 0xff000000 | (stdBank3MaxColor & 0x00ffffff);
+		}
+		int zeroC = 0xff808080;
+		if (sliderValue == 1)
+		    fillRect (zeroC, x, 14, 3, 1);
+		else
+		    blendGradientRect (maxC, maxC, minC, minC, x, 15 - sliderValue, 3, sliderValue);
+	    }
+	}
+}
+
+/*
+<display backgroundColour="0xFF83DD79" textColour="0xFF000000">
+    <pixels>
+        <pixel index="0" colour="FF00FFFF" />
+        <pixel index="1" colour="FF00FFFF" />
+        <pixel index="2" colour="FF00FFFF" />
+        <pixel index="4" colour="FF00FFFF" />
+        <pixel index="5" colour="FF00FFFF" />
+        <pixel index="6" colour="FF00FFFF" />
+        <pixel index="8" colour="FF00FFFF" />
+        <pixel index="9" colour="FF00FFFF" />
+        <pixel index="10" colour="FF00FFFF" />
+        <pixel index="12" colour="FF00FFFF" />
+        <pixel index="13" colour="FF00FFFF" />
+        <pixel index="14" colour="FF00FFFF" />
+        <pixel index="15" colour="FF00FFFF" />
+        <pixel index="16" colour="FF00FFFF" />
+        <pixel index="17" colour="FF00FFFF" />
+        <pixel index="19" colour="FF00FFFF" />
+        <pixel index="20" colour="FF00FFFF" />
+        <pixel index="21" colour="FF00FFFF" />
+        <pixel index="23" colour="FF00FFFF" />
+        <pixel index="24" colour="FF00FFFF" />
+        <pixel index="25" colour="FF00FFFF" />
+        <pixel index="27" colour="FF00FFFF" />
+        <pixel index="28" colour="FF00FFFF" />
+        <pixel index="29" colour="FF00FFFF" />
+        <pixel index="30" colour="FF00FFFF" />
+        <pixel index="31" colour="FF00FFFF" />
+        <pixel index="32" colour="FF00FFFF" />
+        <pixel index="34" colour="FF00FFFF" />
+        <pixel index="35" colour="FF00FFFF" />
+        <pixel index="36" colour="FF00FFFF" />
+        <pixel index="38" colour="FF00FFFF" />
+        <pixel index="39" colour="FF00FFFF" />
+        <pixel index="40" colour="FF00FFFF" />
+        <pixel index="42" colour="FF00FFFF" />
+        <pixel index="43" colour="FF00FFFF" />
+        <pixel index="44" colour="FF00FFFF" />
+        <pixel index="45" colour="FF00FFFF" />
+        <pixel index="46" colour="FF00FFFF" />
+        <pixel index="47" colour="FF00FFFF" />
+        <pixel index="49" colour="FF00FFFF" />
+        <pixel index="50" colour="FF00FFFF" />
+        <pixel index="51" colour="FF00FFFF" />
+        <pixel index="53" colour="FF00FFFF" />
+        <pixel index="54" colour="FF00FFFF" />
+        <pixel index="55" colour="FF00FFFF" />
+        <pixel index="57" colour="FF00FFFF" />
+        <pixel index="58" colour="FF00FFFF" />
+        <pixel index="59" colour="FF00FFFF" />
+        <pixel index="60" colour="FF00FFFF" />
+        <pixel index="61" colour="FF00FFFF" />
+        <pixel index="62" colour="FF00FFFF" />
+        <pixel index="64" colour="FF00FFFF" />
+        <pixel index="65" colour="FF00FFFF" />
+        <pixel index="66" colour="FF00FFFF" />
+        <pixel index="68" colour="FF00FFFF" />
+        <pixel index="69" colour="FF00FFFF" />
+        <pixel index="70" colour="FF00FFFF" />
+        <pixel index="72" colour="FF00FFFF" />
+        <pixel index="73" colour="FF00FFFF" />
+        <pixel index="74" colour="FF00FFFF" />
+        <pixel index="75" colour="FF00FFFF" />
+        <pixel index="76" colour="FF00FFFF" />
+        <pixel index="77" colour="FF00FFFF" />
+        <pixel index="79" colour="FF00FFFF" />
+        <pixel index="80" colour="FF00FFFF" />
+        <pixel index="81" colour="FF00FFFF" />
+        <pixel index="83" colour="FF00FFFF" />
+        <pixel index="84" colour="FF00FFFF" />
+        <pixel index="85" colour="FF00FFFF" />
+        <pixel index="90" colour="FF00FFFF" />
+        <pixel index="91" colour="FF00FFFF" />
+        <pixel index="92" colour="FF00FFFF" />
+        <pixel index="94" colour="FF00FFFF" />
+        <pixel index="95" colour="FF00FFFF" />
+        <pixel index="96" colour="FF00FFFF" />
+        <pixel index="98" colour="FF00FFFF" />
+        <pixel index="99" colour="FF00FFFF" />
+        <pixel index="100" colour="FF00FFFF" />
+        <pixel index="105" colour="FF00FFFF" />
+        <pixel index="106" colour="FF00FFFF" />
+        <pixel index="107" colour="FF00FFFF" />
+        <pixel index="113" colour="FF00FFFF" />
+        <pixel index="114" colour="FF00FFFF" />
+        <pixel index="115" colour="FF00FFFF" />
+        <pixel index="120" colour="FF00FFFF" />
+        <pixel index="121" colour="FF00FFFF" />
+        <pixel index="122" colour="FF00FFFF" />
+        <pixel index="128" colour="FF00FFFF" />
+        <pixel index="129" colour="FF00FFFF" />
+        <pixel index="130" colour="FF00FFFF" />
+        <pixel index="143" colour="FF00FFFF" />
+        <pixel index="144" colour="FF00FFFF" />
+        <pixel index="145" colour="FF00FFFF" />
+        <pixel index="158" colour="FF00FFFF" />
+        <pixel index="159" colour="FF00FFFF" />
+        <pixel index="160" colour="FF00FFFF" />
+        <pixel index="180" colour="FF4F62CB" />
+        <pixel index="181" colour="FF4F62CB" />
+        <pixel index="182" colour="FF4F62CB" />
+        <pixel index="184" colour="FF4F62CB" />
+        <pixel index="185" colour="FF4F62CB" />
+        <pixel index="186" colour="FF4F62CB" />
+        <pixel index="188" colour="FF4F62CB" />
+        <pixel index="189" colour="FF4F62CB" />
+        <pixel index="190" colour="FF4F62CB" />
+        <pixel index="192" colour="FF4F62CB" />
+        <pixel index="193" colour="FF4F62CB" />
+        <pixel index="194" colour="FF4F62CB" />
+        <pixel index="195" colour="FF4F62CB" />
+        <pixel index="196" colour="FF4F62CB" />
+        <pixel index="197" colour="FF4F62CB" />
+        <pixel index="199" colour="FF4F62CB" />
+        <pixel index="200" colour="FF4F62CB" />
+        <pixel index="201" colour="FF4F62CB" />
+        <pixel index="203" colour="FF4F62CB" />
+        <pixel index="204" colour="FF4F62CB" />
+        <pixel index="205" colour="FF4F62CB" />
+        <pixel index="207" colour="FF4F62CB" />
+        <pixel index="208" colour="FF4F62CB" />
+        <pixel index="209" colour="FF4F62CB" />
+        <pixel index="210" colour="FF4F62CB" />
+        <pixel index="211" colour="FF4F62CB" />
+        <pixel index="212" colour="FF4F62CB" />
+        <pixel index="214" colour="FF4F62CB" />
+        <pixel index="215" colour="FF4F62CB" />
+        <pixel index="216" colour="FF4F62CB" />
+        <pixel index="218" colour="FF4F62CB" />
+        <pixel index="219" colour="FF4F62CB" />
+        <pixel index="220" colour="FF4F62CB" />
+        <pixel index="222" colour="FF4F62CB" />
+        <pixel index="223" colour="FF4F62CB" />
+        <pixel index="224" colour="FF4F62CB" />
+    </pixels>
+</display>
+*/
